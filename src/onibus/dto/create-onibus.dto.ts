@@ -6,5 +6,4 @@ export class CreateOnibusDto {
   Valor_Passagem: number;
   Observacoes?: string; // Campo opcional
   Horario: string[];
-   
 }

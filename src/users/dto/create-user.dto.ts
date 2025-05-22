@@ -1,9 +1,9 @@
 export class CreateUserDto {
-    nome: string; // Nome do usuário
-    idade: number; // Idade como número
-    email: string; // E-mail do usuário
-    rotas_salvas: string[]; // Array de strings para rotas salvas
-    senha: string; // Senha do usuário
+  nome: string; // Nome do usuário
+  idade: number; // Idade como número
+  email: string; // E-mail do usuário
+  rotas_salvas: string[]; // Array de strings para rotas salvas
+  senha: string; // Senha do usuário
 }
 /*o que eu vou ter no banco de dados como exemplo é isso 
 
@@ -14,6 +14,3 @@ export class CreateUserDto {
 "senha":"$2a$12$vCJ6mbgY7wP8sM3ezKww2uXHYdEBJPgl3jwWhGxzYNTlXqaHK3rEe"}
 
 */
-
-
-

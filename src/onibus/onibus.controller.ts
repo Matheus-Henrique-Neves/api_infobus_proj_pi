@@ -1,4 +1,12 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Patch,
+  Param,
+  Delete,
+} from '@nestjs/common';
 import { OnibusService } from './onibus.service';
 import { CreateOnibusDto } from './dto/create-onibus.dto';
 import { UpdateOnibusDto } from './dto/update-onibus.dto';
@@ -45,6 +53,4 @@ export class OnibusController {
   ) {
     return this.onibusService.findByStreetsAndTimes(streets, times);
   }
-
-
 }

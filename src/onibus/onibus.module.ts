@@ -5,8 +5,8 @@ import { MongooseModule } from '@nestjs/mongoose';
 import { Onibus, OnibusSchema } from './entities/onibus.entity';
 
 @Module({
-  imports:[
-    MongooseModule.forFeature([{name:Onibus.name,schema:OnibusSchema}])
+  imports: [
+    MongooseModule.forFeature([{ name: Onibus.name, schema: OnibusSchema }]),
   ],
   controllers: [OnibusController],
   providers: [OnibusService],

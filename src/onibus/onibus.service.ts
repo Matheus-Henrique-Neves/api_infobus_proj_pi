@@ -8,8 +8,8 @@ import { InjectModel } from '@nestjs/mongoose';
 @Injectable()
 export class OnibusService {
   constructor(
-    @InjectModel(Onibus.name) private readonly onibusModel: Model<Onibus>) { }
-
+    @InjectModel(Onibus.name) private readonly onibusModel: Model<Onibus>,
+  ) {}
 
   async create(createOnibusDto: CreateOnibusDto): Promise<Onibus> {
     const createdOnibus = new this.onibusModel(createOnibusDto);
@@ -29,9 +29,11 @@ export class OnibusService {
   }
 
   async update(id: string, updateOnibusDto: UpdateOnibusDto): Promise<Onibus> {
-    const updatedOnibus = await this.onibusModel.findByIdAndUpdate(id, updateOnibusDto, {
-      new: true,
-    }).exec();
+    const updatedOnibus = await this.onibusModel
+      .findByIdAndUpdate(id, updateOnibusDto, {
+        new: true,
+      })
+      .exec();
     if (!updatedOnibus) {
       throw new Error(`Onibus with id ${id} not found`);
     }
@@ -46,15 +48,19 @@ export class OnibusService {
     return deletedOnibus;
   }
 
-    async findByRouteNumber(routeNumber: string): Promise<Onibus[]> {
+  async findByRouteNumber(routeNumber: string): Promise<Onibus[]> {
     return this.onibusModel.find({ Num_Onibus: routeNumber }).exec();
   }
 
-    async findByStreetsAndTimes(streets: string[], times: string[]): Promise<Onibus[]> {
-    return this.onibusModel.find({
-      Rota: { $in: streets }, // Verifica se alguma rua está no array Rota
-      Horario: { $in: times }, // Verifica se algum horário está no array Horario
-    }).exec();
+  async findByStreetsAndTimes(
+    streets: string[],
+    times: string[],
+  ): Promise<Onibus[]> {
+    return this.onibusModel
+      .find({
+        Rota: { $in: streets }, // Verifica se alguma rua está no array Rota
+        Horario: { $in: times }, // Verifica se algum horário está no array Horario
+      })
+      .exec();
   }
-
 }
