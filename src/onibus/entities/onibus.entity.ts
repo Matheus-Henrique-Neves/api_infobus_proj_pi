@@ -22,6 +22,12 @@ export class Onibus extends Document {
   Observacoes: string;
 
   @Prop()
-  Horario: string[];
+  Semana: string[];
+
+  @Prop()
+  Sabado : string[];
+
+  @Prop()
+  Domingo : string[];
 }
 export const OnibusSchema = SchemaFactory.createForClass(Onibus);

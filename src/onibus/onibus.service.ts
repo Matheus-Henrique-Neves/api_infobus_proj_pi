@@ -51,16 +51,20 @@ export class OnibusService {
   async findByRouteNumber(routeNumber: string): Promise<Onibus[]> {
     return this.onibusModel.find({ Num_Onibus: routeNumber }).exec();
   }
+  
+async searchOnibus(
+  ruas: string[],
+  semana: string[],
+  sabado: string[],
+  domingo: string[]
+): Promise<Onibus[]> {
+  const filter: any = {};
+  if (ruas && ruas.length > 0) filter.Rota = { $all: ruas };
+  if (semana && semana.length > 0) filter.Semana = { $all: semana };
+  if (sabado && sabado.length > 0) filter.Sabado = { $all: sabado };
+  if (domingo && domingo.length > 0) filter.Domingo = { $all: domingo };
+  //isso pesquisa com o flitro no mongo bd atlas isso é uma delicia
+  return this.onibusModel.find(filter).exec();
+}
 
-  async findByStreetsAndTimes(
-    streets: string[],
-    times: string[],
-  ): Promise<Onibus[]> {
-    return this.onibusModel
-      .find({
-        Rota: { $in: streets }, // Verifica se alguma rua está no array Rota
-        Horario: { $in: times }, // Verifica se algum horário está no array Horario
-      })
-      .exec();
-  }
 }

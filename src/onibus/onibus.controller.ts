@@ -45,12 +45,18 @@ export class OnibusController {
     return this.onibusService.findByRouteNumber(routeNumber);
   }
 
-  // Rota para buscar por ruas e horários
-  @Post('buscar')
-  findByStreetsAndTimes(
-    @Body('streets') streets: string[],
-    @Body('times') times: string[],
-  ) {
-    return this.onibusService.findByStreetsAndTimes(streets, times);
-  }
+
+
+@Post('Buscar')
+searchOnibus(@Body() body: {
+  ruas?: string[],
+  semana?: string[],
+  sabado?: string[],
+  domingo?: string[]
+}) {
+  const { ruas = [], semana = [], sabado = [], domingo = [] } = body;
+  return this.onibusService.searchOnibus(ruas, semana, sabado, domingo);
+}
+
+  
 }
