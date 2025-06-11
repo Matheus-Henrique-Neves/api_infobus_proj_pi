@@ -4,6 +4,7 @@ import { UpdateOnibusDto } from './dto/update-onibus.dto';
 import { Onibus } from './entities/onibus.entity';
 import { Model } from 'mongoose';
 import { InjectModel } from '@nestjs/mongoose';
+import { SearchOnibusDto } from './dto/search-onibus.dto';
 
 @Injectable()
 export class OnibusService {
@@ -49,22 +50,24 @@ export class OnibusService {
   }
 
   async findByRouteNumber(routeNumber: string): Promise<Onibus[]> {
-    return this.onibusModel.find({ Num_Onibus: routeNumber }).exec();
+    const onibus =await this.onibusModel.find({ Num_Onibus: routeNumber }).exec();
+    if (!onibus || onibus.length === 0) {
+      throw new Error(`Onibus de numero => ${routeNumber} não encontrado`);
+    }
+    return onibus;
   }
   
-async searchOnibus(
-  ruas: string[],
-  semana: string[],
-  sabado: string[],
-  domingo: string[]
-): Promise<Onibus[]> {
-  const filter: any = {};
-  if (ruas && ruas.length > 0) filter.Rota = { $all: ruas };
-  if (semana && semana.length > 0) filter.Semana = { $all: semana };
-  if (sabado && sabado.length > 0) filter.Sabado = { $all: sabado };
-  if (domingo && domingo.length > 0) filter.Domingo = { $all: domingo };
-  //isso pesquisa com o flitro no mongo bd atlas isso é uma delicia
-  return this.onibusModel.find(filter).exec();
+searchOnibus(filtro: SearchOnibusDto): Promise<Onibus[]> {
+  const { ruas = [], semana = [], sabado = [], domingo = [] } = filtro;
+
+  // Aqui você pode fazer sua consulta com base nos filtros fornecidos.
+  return this.onibusModel.find({
+    // Exemplo básico:
+    Rota: { $in: ruas },
+    Semana: { $in: semana },
+    Sabado: { $in: sabado },
+    Domingo: { $in: domingo },
+  }).exec();
 }
 
 }
