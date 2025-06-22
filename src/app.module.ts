@@ -5,6 +5,7 @@ import { InjectConnection, MongooseModule } from '@nestjs/mongoose';
 import { Connection } from 'mongoose';
 import { OnibusModule } from './onibus/onibus.module';
 import { UsersModule } from './users/users.module';
+import { EmpresaModule } from './empresa/empresa.module';
 
 @Module({
   imports: [
@@ -13,6 +14,7 @@ import { UsersModule } from './users/users.module';
     ),
     OnibusModule,
     UsersModule,
+    EmpresaModule,
   ],
   controllers: [AppController],
   providers: [AppService],
