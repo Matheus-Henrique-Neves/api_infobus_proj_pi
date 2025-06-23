@@ -70,46 +70,110 @@ export class OnibusService {
     return onibus;
   }
 
-  // --- MÉTODO CREATE MODIFICADO ---
-  async create(createOnibusDto: CreateOnibusDto, empresaId: string): Promise<Onibus> {
-    // 1. Pega a lista de nomes de ruas do DTO
+async create(createOnibusDto: CreateOnibusDto, empresaId: string): Promise<Onibus> {
     const ruas = createOnibusDto.Rota;
 
-    // 2. Chama nosso serviço de geocodificação que já está pronto
-    console.log('Iniciando geocodificação para nova rota...');
-    const coordenadas = await this.geocodeAddresses(ruas);
-    console.log('Geocodificação finalizada.');
+    // --- PASSO A: Geocodificar as paradas (como antes) ---
+    console.log('PASSO A: Iniciando geocodificação das paradas...');
+    const coordenadasDasParadas = await this.geocodeAddresses(ruas);
+    const paradasValidas = coordenadasDasParadas.filter(Boolean) as [number, number][];
+    console.log('PASSO A: Geocodificação das paradas finalizada.');
 
-    // 3. Monta o objeto completo para salvar no banco
+    // --- PASSO B: Buscar o caminho roteado entre as paradas (NOVO!) ---
+    let caminhoRoteado: [number, number][] = [];
+    if (paradasValidas.length > 1) {
+      console.log('PASSO B: Buscando caminho roteado no OSRM...');
+      const coordsString = paradasValidas.map(c => `${c[1]},${c[0]}`).join(';');
+      const url = `http://router.project-osrm.org/route/v1/driving/${coordsString}?overview=full&geometries=geojson`;
+      
+      try {
+        const response = await firstValueFrom(this.httpService.get(url));
+        if (response.data.routes && response.data.routes[0]) {
+          // OSRM retorna [lon, lat], então invertemos para [lat, lon]
+          caminhoRoteado = response.data.routes[0].geometry.coordinates.map(
+            ([lon, lat]: [number, number]) => [lat, lon]
+          );
+          console.log('PASSO B: Caminho roteado encontrado!');
+        }
+      } catch (error) {
+        console.error('Erro ao buscar caminho no OSRM:', error.message);
+        // Se o OSRM falhar, o caminho ficará vazio, mas a rota ainda será criada.
+      }
+    }
+
+    // --- PASSO C: Montar o objeto final e salvar ---
     const onibusParaSalvar = {
       ...createOnibusDto,
-      empresaId: empresaId, // Associa a rota à empresa que a criou
-      Rota_Geocodificada: coordenadas.filter(Boolean), // Salva as coordenadas, removendo as nulas
+      empresaId: empresaId,
+      Rota_Geocodificada: paradasValidas, // Salva as coordenadas dos pinos
+      Caminho_Geocodificado: caminhoRoteado, // Salva o caminho da linha
     };
 
     const createdOnibus = new this.onibusModel(onibusParaSalvar);
     return createdOnibus.save();
   }
 
+
   // --- MÉTODO UPDATE MODIFICADO ---
   async update(id: string, updateOnibusDto: UpdateOnibusDto, empresaId: string): Promise<Onibus> {
-    const onibus = await this.onibusModel.findById(id); // Primeiro, apenas busca o ônibus
+    // 1. Busca o documento existente para verificar a propriedade
+    const onibus = await this.onibusModel.findById(id).exec();
 
+    // 2. Garante que o ônibus existe
     if (!onibus) {
       throw new NotFoundException(`Ônibus com ID "${id}" não encontrado.`);
     }
 
-    if (onibus.empresaId.toString() !== empresaId) {
-      throw new ForbiddenException('Você não tem permissão para modificar esta rota.');
+    // 3. Lógica de segurança: Verifica se a empresa logada é a dona da rota
+    if (onibus.empresaId && onibus.empresaId.toString() !== empresaId) {
+      throw new ForbiddenException(
+        'Você não tem permissão para modificar esta rota.',
+      );
     }
 
-    if (updateOnibusDto.Rota) {
-      console.log('Rota alterada, iniciando nova geocodificação...');
-      const coordenadas = await this.geocodeAddresses(updateOnibusDto.Rota);
-      updateOnibusDto['Rota_Geocodificada'] = coordenadas.filter(Boolean);
-      console.log('Geocodificação finalizada.');
+    // 4. Prepara o objeto para a atualização
+    const dadosParaAtualizar: any = {
+      ...updateOnibusDto,
+      empresaId: empresaId, // Garante que a propriedade seja mantida/adotada
+    };
+
+    // 5. CONDIÇÃO PRINCIPAL: Só executa se uma nova Rota (lista de ruas) for enviada
+    if (updateOnibusDto.Rota && updateOnibusDto.Rota.length > 0) {
+      // 5a. Geocodifica as novas paradas
+      console.log('Rota alterada, iniciando geocodificação das paradas...');
+      const coordenadasDasParadas = await this.geocodeAddresses(updateOnibusDto.Rota);
+      const paradasValidas = coordenadasDasParadas.filter(Boolean) as [number, number][];
+      dadosParaAtualizar.Rota_Geocodificada = paradasValidas;
+      console.log('Geocodificação das paradas finalizada.');
+
+      // 5b. Busca o novo caminho roteado no OSRM
+      let caminhoRoteado: [number, number][] = [];
+      if (paradasValidas.length > 1) {
+        console.log('Buscando novo caminho roteado no OSRM...');
+        const coordsString = paradasValidas.map(c => `${c[1]},${c[0]}`).join(';');
+        const url = `http://router.project-osrm.org/route/v1/driving/${coordsString}?overview=full&geometries=geojson`;
+        
+        try {
+          const response = await firstValueFrom(this.httpService.get(url));
+          if (response.data.routes && response.data.routes[0]) {
+            caminhoRoteado = response.data.routes[0].geometry.coordinates.map(
+              ([lon, lat]: [number, number]) => [lat, lon]
+            );
+            console.log('Novo caminho roteado encontrado!');
+          }
+        } catch (error) {
+          console.error('Erro ao buscar novo caminho no OSRM:', error.message);
+        }
+      }
+      
+      // 5c. Adiciona o novo caminho ao objeto de atualização
+      dadosParaAtualizar.Caminho_Geocodificado = caminhoRoteado;
     }
-    const updatedOnibus = await this.onibusModel.findByIdAndUpdate(id, updateOnibusDto, { new: true });
+
+    // 6. Executa a atualização no banco de dados
+    const updatedOnibus = await this.onibusModel.findByIdAndUpdate(id, dadosParaAtualizar, {
+      new: true, // Retorna o documento já atualizado
+    }).exec();
 
     if (!updatedOnibus) {
       throw new NotFoundException(`Falha ao atualizar o ônibus com ID "${id}".`);
@@ -139,13 +203,17 @@ export class OnibusService {
     return deletedOnibus;
   }
 
-  async findByRouteNumber(routeNumber: string): Promise<Onibus[]> {
-    const onibus = await this.onibusModel.find({ Num_Onibus: routeNumber }).exec();
-    if (!onibus || onibus.length === 0) {
-      throw new Error(`Onibus de numero => ${routeNumber} não encontrado`);
-    }
-    return onibus;
+async findByRouteNumber(routeNumber: string): Promise<Onibus> {
+  // Usa findOne para buscar apenas um documento
+  const onibus = await this.onibusModel.findOne({ Num_Onibus: routeNumber }).exec();
+
+  if (!onibus) {
+    // Lança um erro 404 Not Found, que é o padrão do NestJS
+    throw new NotFoundException(`Ônibus com número de rota "${routeNumber}" não encontrado.`);
   }
+
+  return onibus;
+}
 
   searchOnibusANY(filtro: SearchOnibusDto): Promise<Onibus[]> {
     const { ruas = [], semana = [], sabado = [], domingo = [] } = filtro;

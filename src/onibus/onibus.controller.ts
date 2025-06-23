@@ -90,7 +90,7 @@ remove(@Request() req, @Param('id') id: string): Promise<Onibus> {
 
   // 🔍 Buscar ônibus por número da rota
   @Get('rota/:routeNumber')
-  findByRouteNumber(@Param('routeNumber') routeNumber: string): Promise<Onibus[]> {
+  findByRouteNumber(@Param('routeNumber') routeNumber: string): Promise<Onibus> {
     return this.onibusService.findByRouteNumber(routeNumber);
   }
 

@@ -10,7 +10,24 @@ import { Model } from 'mongoose';
 @Injectable()
 export class UsersService {
    constructor(@InjectModel(User.name) private userModel: Model<User>) {}
-   async create(createUserDto: CreateUserDto): Promise<User> {
+   
+  findAll() {
+    return `This action returns all users`;
+  }
+
+  findOne(id: number) {
+    return `This action returns a #${id} user`;
+  }
+
+  update(id: number, updateUserDto: UpdateUserDto) {
+    return `This action updates a #${id} user`;
+  }
+
+  remove(id: number) {
+    return `This action removes a #${id} user`;
+  }
+
+  async create(createUserDto: CreateUserDto): Promise<User> {
     const saltRounds = 10;
     // 1. Gera o hash da senha pura. O bcrypt cria o "sal" aleatório automaticamente.
     const hashedPassword = await bcrypt.hash(createUserDto.senha, saltRounds);
@@ -51,20 +68,28 @@ export class UsersService {
 
     return updatedUser;
   }
+  
+    async removeFavoriteRoute(userId: string, routeNumber: string): Promise<User> {
+    const user = await this.userModel.findById(userId);
 
-  findAll() {
-    return `This action returns all users`;
+    if (!user) {
+      throw new NotFoundException(`Usuário com ID "${userId}" não encontrado.`);
+    }
+
+    // Usamos o operador $pull do MongoDB.
+    // Ele remove todas as ocorrências do item especificado da array.
+    const updatedUser = await this.userModel.findByIdAndUpdate(
+      userId,
+      { $pull: { Rotas_Salvas: routeNumber } },
+      { new: true }, // Retorna o documento atualizado
+    ).exec();
+
+    if (!updatedUser) {
+      throw new NotFoundException(`Falha ao remover rota para o usuário com ID "${userId}".`);
+    }
+
+    return updatedUser;
   }
 
-  findOne(id: number) {
-    return `This action returns a #${id} user`;
-  }
 
-  update(id: number, updateUserDto: UpdateUserDto) {
-    return `This action updates a #${id} user`;
-  }
-
-  remove(id: number) {
-    return `This action removes a #${id} user`;
-  }
 }
