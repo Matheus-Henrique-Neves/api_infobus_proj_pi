@@ -6,6 +6,7 @@ import { Connection } from 'mongoose';
 import { OnibusModule } from './onibus/onibus.module';
 import { UsersModule } from './users/users.module';
 import { EmpresaModule } from './empresa/empresa.module';
+import { AuthModule } from './auth/auth.module';
 
 @Module({
   imports: [
@@ -15,6 +16,7 @@ import { EmpresaModule } from './empresa/empresa.module';
     OnibusModule,
     UsersModule,
     EmpresaModule,
+    AuthModule,
   ],
   controllers: [AppController],
   providers: [AppService],
