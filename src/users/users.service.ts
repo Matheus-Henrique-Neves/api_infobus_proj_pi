@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import * as bcrypt from 'bcrypt';
@@ -18,7 +18,7 @@ export class UsersService {
     // 2. Cria o novo usuário com a senha já hasheada.
     const newUser = new this.userModel({
       ...createUserDto,
-      password: hashedPassword,
+      senha: hashedPassword,
     });
 
     return newUser.save();
@@ -27,6 +27,29 @@ export class UsersService {
 
   async findOneByEmail(email: string): Promise<User | null> {
     return this.userModel.findOne({ email }).exec();
+  }
+
+
+ async saveFavoriteRoute(userId: string, routeNumber: string): Promise<User> {
+    const user = await this.userModel.findById(userId);
+
+    if (!user) {
+      throw new NotFoundException(`Usuário com ID "${userId}" não encontrado.`);
+    }
+
+    // Usamos o operador $addToSet do MongoDB.
+    // Ele só adiciona o item à array se ele ainda não existir, evitando duplicatas.
+    const updatedUser = await this.userModel.findByIdAndUpdate(
+      userId,
+      { $addToSet: { Rotas_Salvas: routeNumber } },
+      { new: true }, // Retorna o documento atualizado
+    ).exec();
+
+    if (!updatedUser) {
+      throw new NotFoundException(`Falha ao salvar rota para o usuário com ID "${userId}".`);
+    }
+
+    return updatedUser;
   }
 
   findAll() {

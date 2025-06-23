@@ -6,16 +6,21 @@ import {
   Patch,
   Param,
   Delete,
+  UseGuards,
+  UnauthorizedException,
+  Request,
 } from '@nestjs/common';
 import { UsersService } from './users.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
+import { AuthGuard } from 'src/auth/auth.guard';
+import { SaveRouteDto } from './dto/save_route.dto';
 
 @Controller('users')
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}
 
-  @Post()
+  @Post("registrar")
   create(@Body() createUserDto: CreateUserDto) {
     return this.usersService.create(createUserDto);
   }
@@ -39,4 +44,26 @@ export class UsersController {
   remove(@Param('id') id: string) {
     return this.usersService.remove(+id);
   }
+
+@UseGuards(AuthGuard)
+  @Post('rotas/salvar')
+  async saveRoute(@Request() req, @Body() saveRouteDto: SaveRouteDto) {
+    const contaLogada = req.user;
+
+    // Garante que quem está logado é um usuário comum, não uma empresa
+    if (contaLogada.type !== 'user') {
+      throw new UnauthorizedException('Apenas usuários podem salvar rotas favoritas.');
+    }
+    
+    const userId = contaLogada.sub; // ID do usuário, vindo do token JWT
+    const { routeNumber } = saveRouteDto; // Número da rota, vindo do corpo da requisição
+
+    return this.usersService.saveFavoriteRoute(userId, routeNumber);
+  }
+
+
+
+
+
+
 }
