@@ -10,7 +10,7 @@ export class Onibus extends Document {
   @Prop()
   Empresa_Controladora: string;
 
-  @Prop()
+  @Prop({ required: true, unique: true, trim: true })
   Num_Onibus: string;
 
   @Prop()
@@ -33,6 +33,9 @@ export class Onibus extends Document {
 
   @Prop({ type: [[Number]] }) // Formato: [[lat1, lon1], [lat2, lon2], ...]
   Rota_Geocodificada: number[][]; // <-- CAMPO NOVO PARA AS COORDENADAS
+
+  @Prop({ type: [[Number]] }) // <-- NOVO CAMPO
+  Caminho_Geocodificado: number[][]; // Coordenadas do CAMINHO (linha do mapa)
 
   @Prop({ type: mongoose.Schema.Types.ObjectId, ref: 'Empresa', required: true })
   empresaId: Empresa; // <-- CAMPO NOVO PARA O ID DA EMPRESA

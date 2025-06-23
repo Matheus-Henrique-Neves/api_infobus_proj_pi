@@ -7,7 +7,7 @@ export class AuthController {
     // Constructor logic here
     // e.g., initializing properties or injecting dependencies
   }
-  @Post('user/login') // <-- Rota para login de passageiros
+  @Post('users/login') // <-- Rota para login de passageiros
   async loginUser(@Body() body: { email: string; password: string }) {
     if (!body.email || !body.password) {
       throw new BadRequestException('Informe o email e senha');
