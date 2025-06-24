@@ -9,12 +9,15 @@ import {
   UseGuards,
   UnauthorizedException,
   Request,
+  HttpStatus,
+  HttpCode,
 } from '@nestjs/common';
 import { UsersService } from './users.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { AuthGuard } from 'src/auth/auth.guard';
 import { SaveRouteDto } from './dto/save_route.dto';
+import { ChangePasswordDto } from './dto/change-password.dto';
 
 @Controller('users')
 export class UsersController {
@@ -30,10 +33,6 @@ export class UsersController {
     return this.usersService.findAll();
   }
 
-  @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.usersService.findOne(+id);
-  }
 
   @Patch(':id')
   update(@Param('id') id: string, @Body() updateUserDto: UpdateUserDto) {
@@ -74,6 +73,32 @@ export class UsersController {
     const { routeNumber } = saveRouteDto;
 
     return this.usersService.removeFavoriteRoute(userId, routeNumber);
+  }
+
+  @UseGuards(AuthGuard)
+  @Get('me')
+  findMe(@Request() req) {
+    // O 'sub' é o ID do usuário que colocamos no token JWT
+    return this.usersService.findOneById(req.user.sub); // Você precisará criar o método findOneById no service
+  }
+
+  // Endpoint para buscar os detalhes das rotas salvas do usuário logado
+  @UseGuards(AuthGuard)
+  @Get('me/rotas')
+  findMyRoutes(@Request() req) {
+    return this.usersService.findMySavedRoutes(req.user.sub);
+  }
+
+   @UseGuards(AuthGuard)
+  @Patch('me/alterar-senha') // 2. Crie o novo endpoint
+  @HttpCode(HttpStatus.OK) // Define o status de sucesso como 200 OK
+  async changeMyPassword(
+    @Request() req,
+    @Body() changePasswordDto: ChangePasswordDto,
+  ) {
+    const userId = req.user.sub; // Pega o ID do usuário logado a partir do token
+    await this.usersService.changePassword(userId, changePasswordDto);
+    return { message: 'Senha alterada com sucesso!' }; // Retorna uma mensagem de sucesso
   }
 
 
