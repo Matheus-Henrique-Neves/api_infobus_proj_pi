@@ -227,6 +227,14 @@ async findByRouteNumber(routeNumber: string): Promise<Onibus> {
       Domingo: { $in: domingo },
     }).exec();
   }
+  async findAllByRouteNumbers(routeNumbers: string[]): Promise<Onibus[]> {
+  if (!routeNumbers || routeNumbers.length === 0) {
+    return [];
+  }
+  return this.onibusModel.find({
+    Num_Onibus: { $in: routeNumbers },
+  }).exec();
+}
 
   searchOnibusOR(filtro: SearchOnibusDto): Promise<Onibus[]> {
     const { ruas = [], semana = [], sabado = [], domingo = [] } = filtro;

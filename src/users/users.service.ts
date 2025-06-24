@@ -1,22 +1,22 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, UnauthorizedException } from '@nestjs/common';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import * as bcrypt from 'bcrypt';
 import { User } from './entities/user.entity';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
+import { OnibusService } from 'src/onibus/onibus.service';
+import { ChangePasswordDto } from './dto/change-password.dto';
 
 
 @Injectable()
 export class UsersService {
-   constructor(@InjectModel(User.name) private userModel: Model<User>) {}
+   constructor(@InjectModel(User.name) private userModel: Model<User>,
+   private readonly onibusService: OnibusService
+  ) {}
    
   findAll() {
     return `This action returns all users`;
-  }
-
-  findOne(id: number) {
-    return `This action returns a #${id} user`;
   }
 
   update(id: number, updateUserDto: UpdateUserDto) {
@@ -90,6 +90,54 @@ export class UsersService {
 
     return updatedUser;
   }
+
+
+
+  async findMySavedRoutes(userId: string) {
+  const user = await this.userModel.findById(userId).select('Rotas_Salvas');
+  if (!user) {
+    throw new NotFoundException('Usuário não encontrado.');
+  }
+  // Agora, buscamos os detalhes completos dos ônibus baseados nos números salvos
+  return this.onibusService.findAllByRouteNumbers(user.Rotas_Salvas);
+}
+
+async findOneById(id: string) {
+    const user = await this.userModel.findById(id).select('-senha'); // .select('-senha') exclui a senha da resposta
+    if (!user) {
+        throw new NotFoundException(`Usuário com ID ${id} não encontrado.`);
+    }
+    return user;
+}
+
+async changePassword(userId: string, changePasswordDto: ChangePasswordDto): Promise<void> {
+    const { senhaAtual, novaSenha } = changePasswordDto;
+
+    // Busca o usuário no banco, mas DESTA VEZ, selecionando a senha
+    const user = await this.userModel.findById(userId).select('+senha').exec();
+
+    if (!user) {
+      throw new NotFoundException('Usuário não encontrado.');
+    }
+
+    // Compara a senha enviada pelo usuário com a senha hasheada no banco
+    const isPasswordMatching = await bcrypt.compare(senhaAtual, user.senha);
+
+    if (!isPasswordMatching) {
+      throw new UnauthorizedException('A senha atual está incorreta.');
+    }
+
+    // Se a senha atual estiver correta, crie o hash da nova senha
+    const saltRounds = 10;
+    const hashedNewPassword = await bcrypt.hash(novaSenha, saltRounds);
+
+    // Atualiza o usuário no banco de dados com a nova senha hasheada
+    await this.userModel.updateOne(
+      { _id: userId },
+      { senha: hashedNewPassword },
+    );
+  }
+  
 
 
 }
