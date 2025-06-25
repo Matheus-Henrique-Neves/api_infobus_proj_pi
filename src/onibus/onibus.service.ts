@@ -7,6 +7,7 @@ import { InjectModel } from '@nestjs/mongoose';
 import { SearchOnibusDto } from './dto/search-onibus.dto';
 import { HttpService } from '@nestjs/axios';
 import { firstValueFrom } from 'rxjs';
+import { AdvancedSearchDto } from './dto/advanced-search';
 
 @Injectable()
 export class OnibusService {
@@ -249,5 +250,44 @@ async findByRouteNumber(routeNumber: string): Promise<Onibus> {
       ],
     }).exec();
   }
+
+  
+
+  async searchAdvanced(filtro: AdvancedSearchDto): Promise<Onibus[]> {
+  const query: any = {};
+
+  // 1. Filtro por Cidade
+  if (filtro.cidade) {
+    // Busca exata (case-insensitive)
+    query.Cidade_Operante = new RegExp(`^${filtro.cidade}$`, 'i');
+  }
+
+  // 2. Filtro por Empresa
+  if (filtro.empresa) {
+    query.Empresa_Controladora = new RegExp(filtro.empresa, 'i'); // Busca parcial (contém)
+  }
+
+  // 3. Filtro por Ruas (passa em X E Y)
+  // Usamos o operador $all do MongoDB para garantir que a rota contenha TODAS as ruas especificadas.
+  if (filtro.ruas && filtro.ruas.length > 0) {
+    // Mapeamos para criar uma regex para cada rua, tornando a busca case-insensitive
+    const ruasRegex = filtro.ruas.map(rua => new RegExp(rua, 'i'));
+    query.Rota = { $all: ruasRegex };
+  }
+
+  // 4. Filtro por Horário (a partir de)
+  if (filtro.dia && filtro.horario) {
+    // O campo do horário é dinâmico (Semana, Sabado ou Domingo)
+    const campoHorario = filtro.dia; 
+    
+    // $gte (greater than or equal) busca por horários maiores ou iguais ao especificado
+    // Isso funciona para strings no formato "HH:MM"
+    query[campoHorario] = { $elemMatch: { $gte: filtro.horario } };
+  }
+
+  console.log('Executando busca avançada com a query:', JSON.stringify(query, null, 2));
+
+  return this.onibusModel.find(query).exec();
+}
 
 }
