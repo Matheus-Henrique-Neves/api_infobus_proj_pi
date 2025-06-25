@@ -17,6 +17,7 @@ import { SearchOnibusDto } from './dto/search-onibus.dto';
 import { Onibus } from './entities/onibus.entity';
 import { GeocodeOnibusDto } from './dto/geocode-onibus.dto';
 import { AuthGuard } from 'src/auth/auth.guard';
+import { AdvancedSearchDto } from './dto/advanced-search';
 
 
 @Controller('onibus')
@@ -110,4 +111,10 @@ remove(@Request() req, @Param('id') id: string): Promise<Onibus> {
       throw new Error(`Tipo de busca inválido: ${type}`);
     }
   }
+
+ @Post('pesquisa-avancada')
+searchAdvanced(@Body() searchDto: AdvancedSearchDto): Promise<Onibus[]> {
+  return this.onibusService.searchAdvanced(searchDto);
+}
+
 }
